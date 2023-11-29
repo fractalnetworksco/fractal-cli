@@ -1,0 +1,7 @@
+services:
+  test:
+    image: python:3.11-slim
+    entrypoint: bash -c 'pip install poetry==1.7.1 && poetry install && poetry run pytest'
+    volumes:
+      - .:/code
+    working_dir: /code
