@@ -20,6 +20,11 @@ pytest = "^7.4.3"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.poetry.scripts]
+fractal = "fractal.cli.__main__:main"
 
 [tool.poetry.extras]
 dev = ["pytest", "pytest-cov", "pytest-mock", "ipython"]
+
+[tool.poetry.plugins."fractal.cli.entrypoint"]
+"fractal_cli" = "fractal.cli"

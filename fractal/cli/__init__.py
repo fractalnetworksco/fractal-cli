@@ -71,9 +71,7 @@ class CLICZ:
         Args: None
         Returns: Argparser description
         """
-        entrypoint = list(
-            pkg_resources.iter_entry_points(f"{self.cli_module}.entrypoint")
-        )[0]
+        entrypoint = list(pkg_resources.iter_entry_points(f"{self.cli_module}.entrypoint"))[0]
         clicz_module = entrypoint.load()
         return clicz_module.clicz_entrypoint(self)
 
@@ -126,9 +124,7 @@ class CLICZ:
         controller_instance = Controller()
         controller_instance.args = args
         if not hasattr(controller_instance, controller_method):
-            raise Exception(
-                f"Controller {controller_name} has no CLI method {controller_method}"
-            )
+            raise Exception(f"Controller {controller_name} has no CLI method {controller_method}")
         method = getattr(controller_instance, controller_method)
         if not hasattr(method, "cli_method"):
             raise Exception(
@@ -243,9 +239,7 @@ class CLICZ:
                     raise Exception("Docstring YAML missing Args key.")
                 for arg, help in doc_yaml["Args"].items():
                     if not isinstance(help, str):
-                        raise Exception(
-                            f"Argument description for {arg} must be of type str."
-                        )
+                        raise Exception(f"Argument description for {arg} must be of type str.")
                     if arg in defaults:
                         dashed_arg = arg.replace("_", "-")
                         if isinstance(defaults[arg], bool):
@@ -307,9 +301,7 @@ class CLICZ:
                             if alias_parser:
                                 alias_parser.add_argument(f"{arg}", help=help)
                 # make sure docstring YAML spe  cifies all arguments defined in argspec
-                missing_args = list(
-                    set(argspec.args).difference(set([*doc_yaml["Args"].keys()]))
-                )
+                missing_args = list(set(argspec.args).difference(set([*doc_yaml["Args"].keys()])))
                 [missing_args.remove(x) for x in ["self", "cls"] if x in missing_args]
                 if missing_args:
                     raise Exception(
@@ -334,3 +326,22 @@ def cli_method(func=None, parse_docstring=True):
     wrapper.parse_docstring = True if parse_docstring else False
     wrapper.cli_method = True
     return wrapper
+
+
+import pkg_resources
+
+
+class PluginManager:
+    @staticmethod
+    def load_plugins(plugin_namespace="fractal.plugins"):
+        plugins = pkg_resources.iter_entry_points(plugin_namespace)
+        loaded_plugins = {}
+        for entry_point in plugins:
+            loaded_plugins[entry_point.name] = entry_point.load()
+
+        return loaded_plugins
+
+
+def clicz_entrypoint(clicz: CLICZ):
+    for _, plugin_module in PluginManager.load_plugins().items():
+        clicz.register_controller(plugin_module.Controller)
