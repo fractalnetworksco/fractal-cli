@@ -174,6 +174,11 @@ class CLICZ:
                 )
             self.proxy_commands[alias] = (controller_name, method_name)
 
+    def _get_deepest_wrapped(self, method):
+        if hasattr(method, "__wrapped__"):
+            return self._get_deepest_wrapped(method.__wrapped__)
+        return method
+
     def _build_method_argparser(self, controller_parser, controller, method_name, method):
         """ """
         method_description = inspect.getdoc(method)
@@ -207,7 +212,7 @@ class CLICZ:
                 method_name, help=method_description, description=method_description
             )
         method.parser = method_arg_parser
-        argspec = inspect.getfullargspec(method.__wrapped__)
+        argspec = inspect.getfullargspec(self._get_deepest_wrapped(method.__wrapped__))
         static_method = False
         if argspec.args[0] not in ["cls", "self"]:
             static_method = True
@@ -315,6 +320,17 @@ class CLICZ:
 
 
 def cli_method(func=None, parse_docstring=True):
+    """
+    Decorator to mark a method as a CLI method.
+
+    NOTE: Should be the last decorator applied to a method.
+
+    Example:
+
+    @some_other_decorator
+    @cli_method
+    def my_func(self, ...)
+    """
     if not func:
         return functools.partial(cli_method, parse_docstring=parse_docstring)
 
