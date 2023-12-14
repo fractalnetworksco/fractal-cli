@@ -1,4 +1,5 @@
 import functools
+import os
 from typing import Any, Callable, Optional, Tuple
 
 from fractal.cli.utils import read_user_data
@@ -35,6 +36,8 @@ class AuthenticatedController:
         if not creds:
             return False
         self.access_token, self.homeserver_url = creds
+        os.environ["MATRIX_HOMESERVER_URL"] = self.homeserver_url
+        os.environ["MATRIX_ACCESS_TOKEN"] = self.access_token
         return True
 
 
