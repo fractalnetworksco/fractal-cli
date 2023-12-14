@@ -4,8 +4,11 @@ import functools
 import inspect
 import sys
 
+import appdirs
 import pkg_resources
 import yaml
+
+FRACTAL_DATA_DIR = appdirs.user_data_dir("fractal")
 
 COLORS = {
     "HEADER": "\033[95m",
