@@ -10,12 +10,13 @@ class AuthenticatedController:
     TOKEN_FILE = "matrix.creds.yaml"
     homeserver_url: Optional[str] = None
     access_token: Optional[str] = None
+    matrix_id: Optional[str] = None
 
     def __init__(self):
         self.check_if_user_is_authenticated()
 
     @classmethod
-    def get_creds(cls) -> Optional[Tuple[Optional[str], Optional[str]]]:
+    def get_creds(cls) -> Optional[Tuple[Optional[str], Optional[str], Optional[str]]]:
         """
         Returns the access token of the logged in user.
         """
@@ -23,10 +24,11 @@ class AuthenticatedController:
             token_file, _ = read_user_data(cls.TOKEN_FILE)
             access_token = token_file.get("access_token")
             homeserver_url = token_file.get("homeserver_url")
+            matrix_id = token_file.get("matrix_id")
         except FileNotFoundError:
             return None
 
-        return access_token, homeserver_url
+        return access_token, homeserver_url, matrix_id
 
     def check_if_user_is_authenticated(self) -> bool:
         """
@@ -35,9 +37,10 @@ class AuthenticatedController:
         creds = self.get_creds()
         if not creds:
             return False
-        self.access_token, self.homeserver_url = creds
-        os.environ["MATRIX_HOMESERVER_URL"] = self.homeserver_url
-        os.environ["MATRIX_ACCESS_TOKEN"] = self.access_token
+        self.access_token, self.homeserver_url, self.matrix_id = creds
+        os.environ["MATRIX_HOMESERVER_URL"] = self.homeserver_url or ""
+        os.environ["MATRIX_ACCESS_TOKEN"] = self.access_token or ""
+        os.environ["MATRIX_USER_TOKEN"] = self.matrix_id or ""
         return True
 
 
