@@ -1,4 +1,4 @@
-from fractal.matrix.controllers.auth import AuthController
+from fractal.cli.controllers.auth import AuthController
 
 
 def test_login_with_password(mock_getpass):
