@@ -22,7 +22,7 @@ class AuthController:
     @cli_method
     def login(
         self,
-        matrix_id: Optional[str] = None,
+        matrix_id: str,
         homeserver_url: Optional[str] = None,
         access_token: Optional[str] = None,
     ):
@@ -36,9 +36,6 @@ class AuthController:
 
         """
         if not access_token:
-            if not matrix_id:
-                print("Please provide a matrix ID.")
-                exit(1)
             homeserver_url, access_token = async_to_sync(self._login_with_password)(
                 matrix_id, homeserver_url=homeserver_url
             )
@@ -46,9 +43,13 @@ class AuthController:
             if not homeserver_url:
                 print("Please provide a --homeserver-url if logging in with an access token.")
                 exit(1)
-            matrix_id, homeserver_url, access_token = async_to_sync(
-                self._login_with_access_token
-            )(access_token, homeserver_url=homeserver_url)
+            try:
+                matrix_id, homeserver_url, access_token = async_to_sync(
+                    self._login_with_access_token
+                )(access_token, homeserver_url=homeserver_url)
+            except MatrixLoginError as e:
+                print("Error logging in:", e)
+                exit(1)
 
         # save access token to token file
         write_user_data(
