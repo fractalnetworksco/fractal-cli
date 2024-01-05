@@ -149,8 +149,9 @@ class AuthController:
         """
         try:
             data, _ = read_user_data(self.TOKEN_FILE)
-        except KeyError:
-            raise
+        except (KeyError, FileNotFoundError):
+            print(f"You are not logged in")
+            exit(1)
 
         match key:
             case "access_token":
