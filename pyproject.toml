@@ -12,7 +12,7 @@ python = "^3.10"
 pyyaml = "^6.0.1"
 toml = "^0.10.2"
 appdirs = "^1.4.4"
-clicz = "^0.0.1"
+clicz = ">=0.0.1"
 pytest = { version = "^7.4.3", optional = true }
 
 
