@@ -1,4 +1,5 @@
 import os
+import shutil
 from unittest.mock import patch
 
 import pytest
@@ -16,6 +17,6 @@ def cleanup():
     yield
 
     try:
-        os.removedirs(FRACTAL_DATA_DIR)
+        shutil.rmtree(FRACTAL_DATA_DIR)
     except FileNotFoundError:
         pass
