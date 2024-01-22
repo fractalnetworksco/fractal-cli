@@ -6,12 +6,7 @@ import yaml
 from asgiref.sync import async_to_sync
 from fractal.cli import FRACTAL_DATA_DIR
 from fractal.cli.controllers.auth import AuthController
-
-# FIXME: reading from the yaml file isnt working, figure out how to read from the file
-# and compare the values to what is created in test functions
-
-# TODO: figure out why _login_with_password -> client.login is taking a long time
-# with consecutive function calls
+from fractal.cli.utils import read_user_data #! use this to read yaml
 
 # TODO: figure out how to enter command line args automatically 
 
@@ -22,10 +17,6 @@ def test_authcontroller_login_no_access_token(mock_getpass):
     password and call _login_with_password()
     """
     auth_cntrl = AuthController()
-    # homeserver_url = "http://localhost:8008"
-    # _, access_token = async_to_sync(auth_cntrl._login_with_password)(
-    #     "@admin:localhost", homeserver_url=homeserver_url
-    # )
 
     # verify that the fractal data directory does not exist
     assert not os.path.exists(FRACTAL_DATA_DIR)
@@ -40,20 +31,15 @@ def test_authcontroller_login_no_access_token(mock_getpass):
     # verify that _login_with_access_token() was not called
     mock_login_with_access_token.assert_not_called()
 
+
     # verify that after the login, the fractal data directory exists as well as the
     # associated yaml file
     assert os.path.exists(FRACTAL_DATA_DIR)
     assert os.path.exists(f"{FRACTAL_DATA_DIR}/{auth_cntrl.TOKEN_FILE}")
 
-    # def read_yaml_file(path):
-    #     with open(path, 'r') as file:
-    #         print('here')
-    #         data = yaml.safe_load(file)
-    #         print('also here')
-    #     return data
+    # ! ============== finish this
+    data, _ = read_user_data(auth_cntrl.TOKEN_FILE)
 
-    # data = read_yaml_file(f"{FRACTAL_DATA_DIR}/{auth_cntrl.TOKEN_FILE}")
-    # print('data=========', data)
 
 
 def test_authcontroller_login_with_access_token():
@@ -129,3 +115,7 @@ def test_authcontroller_login_invalid_access_token():
 
     # verify that the fractal data directory is not created
     assert not os.path.exists(FRACTAL_DATA_DIR)
+
+def test_authcontroller_whoami_key_error():
+    """
+    """
