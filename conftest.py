@@ -11,6 +11,11 @@ def mock_getpass():
         yield
 
 
+@pytest.fixture
+def test_homeserver_url() -> str:
+    return os.environ.get("TEST_HOMESERVER_URL", "http://localhost:8008")
+
+
 @pytest.fixture(autouse=True)
 def cleanup():
     yield
