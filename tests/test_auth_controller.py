@@ -2,7 +2,6 @@ import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import yaml
 from asgiref.sync import async_to_sync
 from fractal.cli import FRACTAL_DATA_DIR
 from fractal.cli.controllers.auth import (
