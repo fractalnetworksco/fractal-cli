@@ -1,5 +1,4 @@
 import os
-import shutil
 from unittest.mock import patch
 
 import pytest
@@ -12,11 +11,16 @@ def mock_getpass():
         yield
 
 
+@pytest.fixture
+def test_homeserver_url() -> str:
+    return os.environ.get("TEST_HOMESERVER_URL", "http://localhost:8008")
+
+
 @pytest.fixture(autouse=True)
 def cleanup():
     yield
 
     try:
-        shutil.rmtree(FRACTAL_DATA_DIR)
+        os.removedirs(FRACTAL_DATA_DIR)
     except FileNotFoundError:
         pass
