@@ -156,10 +156,13 @@ class AuthController:
         match key:
             case "access_token":
                 print(data["access_token"])
+                return data['access_token']
             case "homeserver_url":
                 print(data["homeserver_url"])
+                return data['homeserver_url']
             case "matrix_id":
                 print(data["matrix_id"])
+                return data['matrix_id']
 
 
 class AuthenticatedController:

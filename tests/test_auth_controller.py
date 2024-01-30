@@ -315,7 +315,7 @@ async def test_authcontroller_login_with_access_token_whoami_error(test_homeserv
         assert str(e.value) == "test_message"
 
 
-async def test_authcontroller_login_with_access_token_no_error(test_homeserver_url):
+async def test_authcontroller_login_with_access_token_no_error(test_homeserver_url, test_user_access_token):
     """ 
     Tests that login variables are returned if there are no errors in the 
     _login_with_access_token() function.
@@ -325,7 +325,7 @@ async def test_authcontroller_login_with_access_token_no_error(test_homeserver_u
     auth_cntrl = AuthController()
     homeserver_url = test_homeserver_url
     matrix_id = "@admin:localhost"
-    access_token = "syt_YWRtaW4_QIynvqjNtGjFwtAqnCEW_17qHVu"
+    access_token = test_user_access_token
 
     # call the function and save the return values
     (
@@ -512,32 +512,28 @@ def test_authcontroller_show_key_cases(test_homeserver_url):
         "fractal.cli.controllers.auth.prompt_matrix_password", new_callable=MagicMock()
     ) as mock_password_prompt:
         mock_password_prompt.return_value = "admin"
-        auth_cntrl.login(matrix_id=matrix_id)
+        auth_cntrl.login(matrix_id=matrix_id, homeserver_url=homeserver_url)
 
     # verify that the fractal data directory exists
     assert os.path.exists(FRACTAL_DATA_DIR)
 
+    data, _ = read_user_data("matrix.creds.yaml")
+
+    access_token = data['access_token']
+
 
     # access token case
     key = "access_token"
-    with patch("fractal.cli.controllers.auth.print", new=MagicMock()) as mock_print:
-        auth_cntrl.show(key)
-    mock_print.assert_called_once()
+    assert auth_cntrl.show(key) == access_token
 
     # homeserver url case
     key = "homeserver_url"
-    with patch("fractal.cli.controllers.auth.print", new=MagicMock()) as mock_print:
-        auth_cntrl.show(key)
-    mock_print.assert_called_once_with(homeserver_url)
+    assert auth_cntrl.show(key) == homeserver_url
 
     # matrix id case
     key = "matrix_id"
-    with patch("fractal.cli.controllers.auth.print", new=MagicMock()) as mock_print:
-        auth_cntrl.show(key)
-    mock_print.assert_called_once_with(matrix_id)
+    assert auth_cntrl.show(key) == matrix_id
 
     # non-matching case
     key = "invalid_key"
-    with patch("fractal.cli.controllers.auth.print", new=MagicMock()) as mock_print:
-        auth_cntrl.show(key)
-    mock_print.assert_not_called()
+    assert auth_cntrl.show(key) == None

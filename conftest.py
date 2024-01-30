@@ -12,6 +12,9 @@ def mock_getpass():
     with patch("fractal.matrix.utils.getpass", return_value="admin"):
         yield
 
+@pytest.fixture
+def test_user_access_token():
+    return os.environ['MATRIX_ACCESS_TOKEN']
 
 @pytest.fixture
 def test_homeserver_url() -> str:
@@ -28,7 +31,7 @@ def logged_in_auth_controller(test_homeserver_url):
         "fractal.cli.controllers.auth.prompt_matrix_password", new_callable=MagicMock()
     ) as mock_password_prompt:
         mock_password_prompt.return_value = "admin"
-        auth_cntrl.login(matrix_id=matrix_id)
+        auth_cntrl.login(matrix_id=matrix_id, homeserver_url=test_homeserver_url)
 
     return auth_cntrl
 
