@@ -118,7 +118,7 @@ class AuthController:
     async def _login_with_access_token(
         self, access_token: str, homeserver_url: str
     ) -> Tuple[str, str, str]:
-        async with MatrixClient(homeserver_url, access_token) as client:
+        async with MatrixClient(homeserver_url=homeserver_url, access_token=access_token) as client:
             res = await client.whoami()
             if isinstance(res, WhoamiError):
                 raise MatrixLoginError(res.message)

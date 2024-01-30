@@ -18,7 +18,7 @@ def test_homeserver_url() -> str:
     return os.environ.get("TEST_HOMESERVER_URL", "http://localhost:8008")
 
 @pytest.fixture(scope="function")
-def logged_in_auth_controller():
+def logged_in_auth_controller(test_homeserver_url):
     # create an AuthController object and login variables
     auth_cntrl = AuthController()
     matrix_id = "@admin:localhost"

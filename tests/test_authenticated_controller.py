@@ -11,7 +11,7 @@ from fractal.cli.controllers.auth import (
 )
 
 
-def test_authenticatedcontroller_get_creds_logged_in(logged_in_auth_controller):
+def test_authenticatedcontroller_get_creds_logged_in(logged_in_auth_controller, test_homeserver_url):
     """ 
     Tests that if the user is logged in, there is a file with their credentials and
     that data is returned.
@@ -19,7 +19,7 @@ def test_authenticatedcontroller_get_creds_logged_in(logged_in_auth_controller):
 
     # create matrix login variables
     matrix_id = "@admin:localhost"
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
 
     # set the access token variable that should change when get_creds() is called
     returned_access_token = "this should change"

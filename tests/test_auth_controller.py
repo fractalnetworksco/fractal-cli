@@ -13,14 +13,14 @@ from fractal.cli.controllers.auth import (
 from fractal.cli.utils import read_user_data
 
 
-def test_authcontroller_login_no_access_token(mock_getpass):
+def test_authcontroller_login_no_access_token(mock_getpass, test_homeserver_url):
     """
     Tests that if you do not pass an access token, the controller will login with a
     password and call _login_with_password()
     """
     auth_cntrl = AuthController()
     matrix_id = "@admin:localhost"
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
 
     # verify that the fractal data directory does not exist
     assert not os.path.exists(FRACTAL_DATA_DIR)
@@ -30,7 +30,7 @@ def test_authcontroller_login_no_access_token(mock_getpass):
         "fractal.cli.controllers.auth.AuthController._login_with_access_token",
         new_callable=MagicMock(),
     ) as mock_login_with_access_token:
-        auth_cntrl.login(matrix_id, homeserver_url="http://localhost:8008")
+        auth_cntrl.login(matrix_id, homeserver_url=homeserver_url)
 
     # verify that _login_with_access_token() was not called
     mock_login_with_access_token.assert_not_called()
@@ -49,7 +49,7 @@ def test_authcontroller_login_no_access_token(mock_getpass):
     assert data["matrix_id"] == matrix_id
 
 
-def test_authcontroller_login_with_access_token():
+def test_authcontroller_login_with_access_token(test_homeserver_url):
     """
     Tests that if an access token is passed to the function, _login_with_access_token()
     is called instead of _login_with_password().
@@ -57,7 +57,7 @@ def test_authcontroller_login_with_access_token():
 
     # create an AuthController object and login variables
     auth_cntrl = AuthController()
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
     matrix_id = "@admin:localhost"
 
     # patch prompt_matrix_password to automatically enter password
@@ -119,7 +119,7 @@ def test_authcontroller_login_no_homeserver_url():
     assert not os.path.exists(FRACTAL_DATA_DIR)
 
 
-def test_authcontroller_login_invalid_access_token():
+def test_authcontroller_login_invalid_access_token(test_homeserver_url):
     """
     Tests that a SystemExit exception is raised if there is an invalid access token
     passed.
@@ -135,7 +135,7 @@ def test_authcontroller_login_invalid_access_token():
     # call login without a homeserver_url to raise SystemExit
     with pytest.raises(SystemExit):
         auth_cntrl.login(
-            "@admin:localhost", homeserver_url="http://localhost:8008", access_token=access_token
+            "@admin:localhost", homeserver_url=test_homeserver_url, access_token=access_token
         )
 
     # verify that the fractal data directory is not created
@@ -174,7 +174,7 @@ def test_authcontroller_whoami_first_keyerror_not_logged_in():
             auth_cntrl.whoami()
 
 
-def test_authcontroller_whoami_keyerror_not_logged_in():
+def test_authcontroller_whoami_keyerror_not_logged_in(test_homeserver_url):
     """
     Tests that an exception is raised if you are not logged in and make an attempt to
     get information about a logged in user.
@@ -183,7 +183,7 @@ def test_authcontroller_whoami_keyerror_not_logged_in():
     # create an AuthController object and login variables
     auth_cntrl = AuthController()
     matrix_id = "@admin:localhost"
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
 
     # login, patching prompt_matrix_password to automatically enter the password
     with patch(
@@ -201,7 +201,7 @@ def test_authcontroller_whoami_keyerror_not_logged_in():
             auth_cntrl.whoami()
 
 
-def test_authcontroller_whoami_no_errors():
+def test_authcontroller_whoami_no_errors(test_homeserver_url):
     """
     Tests that no errors are raised if the user is logged in and read_user_data returns
     the expected dictionary.
@@ -210,7 +210,7 @@ def test_authcontroller_whoami_no_errors():
     # create an AuthController object and login variables
     auth_cntrl = AuthController()
     matrix_id = "@admin:localhost"
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
 
     # patch prompt_matrix_password to return a preset password
     with patch(
@@ -260,7 +260,7 @@ def test_authcontroller_logout_keyerror():
             auth_cntrl.logout()
 
 
-def test_authcontroller_logout_confirm_file_deletion():
+def test_authcontroller_logout_confirm_file_deletion(test_homeserver_url):
     """
     Tests that the file containing the user information is deleted upon logging out.
     """
@@ -268,7 +268,7 @@ def test_authcontroller_logout_confirm_file_deletion():
     # create an AuthControlle object and login variables
     auth_cntrl = AuthController()
     matrix_id = "@admin:localhost"
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
 
     # verify that the fractal data directory does not exist
     assert not os.path.exists(FRACTAL_DATA_DIR)
@@ -291,7 +291,7 @@ def test_authcontroller_logout_confirm_file_deletion():
     assert not os.path.exists(f"{FRACTAL_DATA_DIR}/{auth_cntrl.TOKEN_FILE}")
 
 
-async def test_authcontroller_login_with_access_token_whoami_error():
+async def test_authcontroller_login_with_access_token_whoami_error(test_homeserver_url):
     """
     Tests that an exception is raised if a WhoamiError is returned from
     the whoami function
@@ -299,7 +299,7 @@ async def test_authcontroller_login_with_access_token_whoami_error():
 
     # create an AuthController and login variables
     auth_cntrl = AuthController()
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
 
     # patch client.whoami to return a WhoamiError
     with patch(
@@ -315,7 +315,7 @@ async def test_authcontroller_login_with_access_token_whoami_error():
         assert str(e.value) == "test_message"
 
 
-async def test_authcontroller_login_with_access_token_no_error():
+async def test_authcontroller_login_with_access_token_no_error(test_homeserver_url):
     """ 
     Tests that login variables are returned if there are no errors in the 
     _login_with_access_token() function.
@@ -323,7 +323,7 @@ async def test_authcontroller_login_with_access_token_no_error():
 
     # create an AuthController object and login variables
     auth_cntrl = AuthController()
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
     matrix_id = "@admin:localhost"
     access_token = "syt_YWRtaW4_QIynvqjNtGjFwtAqnCEW_17qHVu"
 
@@ -342,7 +342,7 @@ async def test_authcontroller_login_with_access_token_no_error():
     assert returned_matrix_id == matrix_id
 
 
-async def test_authcontroller_login_with_password_no_password_no_homeserver():
+async def test_authcontroller_login_with_password_no_password_no_homeserver(test_homeserver_url):
     """ 
     Tests that get_homeserver_for_matrix_id and prompt_matrix_password are called if neither
     a password or homeserver_url are passed to _login_with_password
@@ -351,7 +351,7 @@ async def test_authcontroller_login_with_password_no_password_no_homeserver():
     # create an AuthController object and login variables
     auth_cntrl = AuthController()
     matrix_id = "@admin:localhost"
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
 
     # patch get_homeserver_for_matrix_id and prompt_matrix_password to verify function calls
     with patch(
@@ -375,14 +375,14 @@ async def test_authcontroller_login_with_password_no_password_no_homeserver():
     assert returned_homeserver_url == homeserver_url
 
 
-async def test_authcontroller_login_with_password_loginerror():
+async def test_authcontroller_login_with_password_loginerror(test_homeserver_url):
     """ 
     Tests that an exception is raised if a LoginError is returned by client.login
     """
 
     auth_cntrl = AuthController()
     matrix_id = "@admin:localhost"
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
 
     # patch get_homeserver_for_matrix_id and prompt_matrix_password to verify they are not
         # called. Patch the client.login function to raise an exception
@@ -413,7 +413,7 @@ async def test_authcontroller_login_with_password_loginerror():
     mock_password_prompt.assert_not_called()
 
 
-async def test_authcontroller_login_invalid_password():
+async def test_authcontroller_login_invalid_password(test_homeserver_url):
     """ 
     Tests that an exception is raised if an invalid password is entered
     """
@@ -421,7 +421,7 @@ async def test_authcontroller_login_invalid_password():
     # create an AuthController object and login variables
     auth_cntrl = AuthController()
     matrix_id = "@admin:localhost"
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
 
     # call _login_with_pasword passing an invalid password
     with pytest.raises(MatrixLoginError) as e:
@@ -433,7 +433,7 @@ async def test_authcontroller_login_invalid_password():
     assert str(e.value) == "Invalid username or password"
 
 
-async def test_authcontroller_login_with_password_no_error():
+async def test_authcontroller_login_with_password_no_error(test_homeserver_url):
     """ 
     Tests that no errors are raised and that values are returned if when a valid password
     is given to the function
@@ -442,7 +442,7 @@ async def test_authcontroller_login_with_password_no_error():
     # create an AuthController object and login variables
     auth_cntrl = AuthController()
     matrix_id = "@admin:localhost"
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
 
     # set the returned_access_token and expect it to be changed
     returned_access_token = "test_access_token"
@@ -495,7 +495,7 @@ def test_authcontroller_show_keyerror():
             auth_cntrl.show(key)
 
 
-def test_authcontroller_show_key_cases():
+def test_authcontroller_show_key_cases(test_homeserver_url):
     """ 
     Tests the non-error cases of show() and verifies the print statements associated with
     their key value.
@@ -505,7 +505,7 @@ def test_authcontroller_show_key_cases():
     # create an AuthController object and login variables
     auth_cntrl = AuthController()
     matrix_id = "@admin:localhost"
-    homeserver_url = "http://localhost:8008"
+    homeserver_url = test_homeserver_url
 
     # log the user in patching prompt_matrix_password to use preset password
     with patch(

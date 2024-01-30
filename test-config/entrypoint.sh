@@ -15,4 +15,4 @@ source "$TEST_CONFIG_DIR/fractal_cli.$ENV.env"
 
 cd /code
 
-pytest -v --asyncio-mode=auto --cov=/code/fractal --cov-report=lcov --cov-report=term tests/
+pytest -v -s --asyncio-mode=auto --cov=/code/fractal --cov-report=lcov --cov-report=term tests/
