@@ -2,7 +2,7 @@ import secrets
 from unittest.mock import patch
 
 import pytest
-from fractal.cli.controllers.registration import RegistrationController
+from fractal.cli.controllers.registration import RegistrationController, get_homeserver_for_matrix_id
 
 
 async def test_registration_controller_register_local_error_getting_homeserver_container():
@@ -87,7 +87,7 @@ async def test_registration_controller_register_True_local(test_registration_tok
     test_registration_controller = RegistrationController()
 
     with patch('fractal.cli.controllers.registration.RegistrationController._register_local') as mock_register_local:
-        with patch('fractal.cli.controllers.registration.get_homeserver_for_matrix') as mock_get_homeserver:
+        with patch('fractal.cli.controllers.registration.get_homeserver_for_matrix_id') as mock_get_homeserver:
             await test_registration_controller._register(
                 matrix_id=matrix_id,
                 password=password,
@@ -99,25 +99,46 @@ async def test_registration_controller_register_True_local(test_registration_tok
     mock_register_local.assert_called_once()
 
 
-async def test_registration_controller_register_existing_homeserver():
+async def test_registration_controller_register_existing_homeserver(test_registration_token, test_homeserver_url):
     """
-    ? pass existing homeserver from fixture
     """
 
+    matrix_id = f"@test-user-{secrets.token_hex(8)}:localhost"
+    password = "test_password"
+
+    test_registration_controller = RegistrationController()
+
+    with patch('fractal.cli.controllers.registration.get_homeserver_for_matrix_id') as mock_get_homeserver:
+        _, homeserver_url = await test_registration_controller._register(
+            matrix_id=matrix_id,
+            password=password,
+            registration_token=test_registration_token, 
+            homeserver_url=test_homeserver_url
+        )
+
+    mock_get_homeserver.assert_not_called()
+    assert homeserver_url == test_homeserver_url
 
 
+async def test_registration_controller_register_no_homeserver(test_registration_token):
+    """
+    """
 
+    matrix_id = f"@test-user-{secrets.token_hex(8)}:localhost"
+    password = "test_password"
 
+    test_registration_controller = RegistrationController()
 
+    homeserver_url = None
 
+    _, homeserver_url = await test_registration_controller._register(
+        matrix_id=matrix_id,
+        password=password,
+        registration_token=test_registration_token, 
+    )
 
+    assert homeserver_url is not None 
 
-
-
-
-
-
-
-
+# async def test_registration_controller_register
 
 
