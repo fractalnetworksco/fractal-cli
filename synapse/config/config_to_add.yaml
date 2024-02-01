@@ -17,7 +17,6 @@ rc_login:
     per_second: 0.19
     burst_count: 656565
 rc_registration:
-  address:
     per_second: 0.15
     burst_count: 656565
   # failed_attempts:
