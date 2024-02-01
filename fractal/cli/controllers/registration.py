@@ -33,7 +33,7 @@ class RegistrationController(AuthenticatedController):
         result = synapse_container.exec_run(
             f"register_new_matrix_user -c /data/homeserver.yaml -a -u {username} -p {password} http://localhost:8008"
         )
-        if "User ID already taken" not in result.output.decode("utf-8") and result.exit_code != 0:
+        if result.exit_code != 0:
             print(result.output.decode("utf-8"))
             exit(1)
 
@@ -115,7 +115,9 @@ class RegistrationController(AuthenticatedController):
         """
         match action:
             case "create":
-                print(asyncio.run(self._create_token()))
+                token = asyncio.run(self._create_token()) 
+                print(token)
+                return token
             case "list":
                 print(f"FIXME: List not implemented yet.")
             case _:
