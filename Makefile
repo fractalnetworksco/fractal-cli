@@ -1,4 +1,4 @@
-.PHONY: test-ci
+.PHONY: test-ci synapse
 
 TEST = ""
 
@@ -14,3 +14,6 @@ test:
 
 qtest:
 	pytest -k ${TEST} -s --cov-config=.coveragerc --cov=fractal --asyncio-mode=auto --cov-report=lcov tests/
+
+synapse:
+	docker compose -f ./synapse/docker-compose.yml up synapse -d --force-recreate --build

@@ -27,7 +27,7 @@ async def test_registration_controller_register_local_error_getting_homeserver_c
     mock_print.assert_called_with(f"No synapse server running locally: .")
 
 
-async def test_registration_controller_register_local_successful_registration():
+async def test_registration_controller_register_local_successful_registration(test_homeserver_url):
     """ 
     Tests that values are returned from the function if a user is successfully
     registered.
@@ -39,7 +39,7 @@ async def test_registration_controller_register_local_successful_registration():
     test_registration_controller = RegistrationController()
 
     access_token, homeserver_url = await test_registration_controller._register_local(
-        matrix_id=matrix_id, password=password
+        matrix_id=matrix_id, password=password, homeserver_url=test_homeserver_url
     )
 
     assert access_token is not None
