@@ -1,4 +1,5 @@
 import os
+from uuid import uuid4
 import secrets
 import shutil
 from unittest.mock import patch, MagicMock
@@ -44,8 +45,16 @@ def test_registration_token():
 
     return registration_token
 
+@pytest.fixture(scope='function')
+def test_yaml_dict():
+    yaml_info = {
+        str(uuid4()) : str(uuid4()),
+        str(uuid4()) : str(uuid4()),
+        str(uuid4()) : str(uuid4()),
+        str(uuid4()) : str(uuid4())
+    }
 
-
+    return yaml_info
 
 @pytest.fixture(autouse=True)
 def cleanup():
