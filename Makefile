@@ -4,7 +4,8 @@ TEST = ""
 
 test-ci:
 	docker compose up synapse --build --force-recreate -d --wait
-	docker compose up test --build --exit-code-from test
+	docker compose up test --build --force-recreate --exit-code-from test
+	docker compose down
 
 setup:
 	python test-config/prepare-test.py

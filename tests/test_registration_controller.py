@@ -2,7 +2,10 @@ import secrets
 from unittest.mock import patch
 
 import pytest
-from fractal.cli.controllers.registration import RegistrationController, get_homeserver_for_matrix_id
+from fractal.cli.controllers.registration import (
+    RegistrationController,
+    get_homeserver_for_matrix_id,
+)
 
 
 async def test_registration_controller_register_local_error_getting_homeserver_container():
@@ -28,7 +31,7 @@ async def test_registration_controller_register_local_error_getting_homeserver_c
 
 
 async def test_registration_controller_register_local_successful_registration(test_homeserver_url):
-    """ 
+    """
     Tests that values are returned from the function if a user is successfully
     registered.
     """
@@ -47,8 +50,8 @@ async def test_registration_controller_register_local_successful_registration(te
 
 
 async def test_registration_controller_register_local_user_id_already_taken():
-    """ 
-    Tests that an exception is raised if an attempt is made to register a user with the 
+    """
+    Tests that an exception is raised if an attempt is made to register a user with the
     same user id as an existing user.
     """
 
@@ -72,7 +75,7 @@ async def test_registration_controller_register_local_user_id_already_taken():
 
     assert access_token is None
     assert homeserver_url is None
-    
+
     mock_print.assert_called_with(
         "Sending registration request...\nERROR! Received 400 Bad Request\nUser ID already taken.\n"
     )
@@ -92,7 +95,7 @@ async def test_registration_controller_register_True_local(test_registration_tok
             await test_registration_controller._register(
                 matrix_id=matrix_id,
                 password=password,
-                registration_token=test_registration_token, 
+                registration_token=test_registration_token,
                 local=True
             )
 
@@ -115,7 +118,7 @@ async def test_registration_controller_register_existing_homeserver(test_registr
         _, homeserver_url = await test_registration_controller._register(
             matrix_id=matrix_id,
             password=password,
-            registration_token=test_registration_token, 
+            registration_token=test_registration_token,
             homeserver_url=test_homeserver_url
         )
 
@@ -139,10 +142,10 @@ async def test_registration_controller_register_no_homeserver(test_registration_
     _, homeserver_url = await test_registration_controller._register(
         matrix_id=matrix_id,
         password=password,
-        registration_token=test_registration_token, 
+        registration_token=test_registration_token,
     )
 
-    assert homeserver_url is not None 
+    assert homeserver_url is not None
 
 def test_registration_controller_register_cli_method(test_registration_token):
     """
@@ -170,7 +173,7 @@ async def test_registration_controller_create_token():
     """
 
     test_registration_controller = RegistrationController()
-    
+
     token = None
 
     token = await test_registration_controller._create_token()
@@ -201,5 +204,3 @@ def test_registration_controller_token_cases():
         test_registration_controller.token('invalid_action')
     # TODO: might need to update the string if it gets changed in the token function
     mock_print.assert_called_once_with("Invalid action. Must be either 'create'")
-
-

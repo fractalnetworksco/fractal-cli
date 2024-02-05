@@ -1,7 +1,7 @@
 import asyncio
+import os
 from sys import exit
 from typing import Optional, Tuple
-from nio import LoginError
 
 import docker
 from clicz import cli_method
@@ -9,6 +9,7 @@ from docker.models.containers import Container
 from fractal.cli.controllers.auth import AuthenticatedController
 from fractal.matrix import MatrixClient, get_homeserver_for_matrix_id
 from fractal.matrix.utils import parse_matrix_id
+from nio import LoginError
 
 
 class RegistrationController(AuthenticatedController):
@@ -20,8 +21,9 @@ class RegistrationController(AuthenticatedController):
         try:
             # get homeserver container
             docker_client = docker.from_env()
+            synapse_label = os.environ.get("SYNAPSE_DOCKER_LABEL", "org.homeserver=true")
             synapse_container: Container = docker_client.containers.list(
-                filters={"label": "org.homeserver=true"}
+                filters={"label": synapse_label}
             )[
                 0
             ]  # type: ignore
@@ -41,7 +43,7 @@ class RegistrationController(AuthenticatedController):
             print(result.output.decode("utf-8"))
             exit(1)
 
-        async with MatrixClient(homeserver_url) as client:  
+        async with MatrixClient(homeserver_url) as client:
             client.user = username
             await client.login(password=password)
             access_token = client.access_token
