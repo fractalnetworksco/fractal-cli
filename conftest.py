@@ -1,7 +1,10 @@
 import os
+from uuid import uuid4
+import secrets
 import shutil
 from unittest.mock import patch, MagicMock
 from fractal.cli.controllers.auth import AuthController
+from fractal.cli.controllers.registration import RegistrationController
 
 import pytest
 from fractal.cli import FRACTAL_DATA_DIR
@@ -35,6 +38,23 @@ def logged_in_auth_controller(test_homeserver_url):
 
     return auth_cntrl
 
+@pytest.fixture(scope="function")
+def test_registration_token():
+    test_registration_controller = RegistrationController()
+    registration_token = test_registration_controller.token("create")
+
+    return registration_token
+
+@pytest.fixture(scope='function')
+def test_yaml_dict():
+    yaml_info = {
+        str(uuid4()) : str(uuid4()),
+        str(uuid4()) : str(uuid4()),
+        str(uuid4()) : str(uuid4()),
+        str(uuid4()) : str(uuid4())
+    }
+
+    return yaml_info
 
 @pytest.fixture(autouse=True)
 def cleanup():

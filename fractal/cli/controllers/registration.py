@@ -1,4 +1,5 @@
 import asyncio
+import os
 from sys import exit
 from typing import Optional, Tuple
 
@@ -8,17 +9,21 @@ from docker.models.containers import Container
 from fractal.cli.controllers.auth import AuthenticatedController
 from fractal.matrix import MatrixClient, get_homeserver_for_matrix_id
 from fractal.matrix.utils import parse_matrix_id
+from nio import LoginError
 
 
 class RegistrationController(AuthenticatedController):
     PLUGIN_NAME = "registration"
 
-    async def _register_local(self, matrix_id: str, password: str) -> Tuple[str, str]:
+    async def _register_local(
+        self, matrix_id: str, password: str, homeserver_url: Optional[str] = None
+    ) -> Tuple[str, str]:
         try:
             # get homeserver container
             docker_client = docker.from_env()
+            synapse_label = os.environ.get("SYNAPSE_DOCKER_LABEL", "org.homeserver=true")
             synapse_container: Container = docker_client.containers.list(
-                filters={"label": "org.homeserver=true"}
+                filters={"label": synapse_label}
             )[
                 0
             ]  # type: ignore
@@ -27,19 +32,20 @@ class RegistrationController(AuthenticatedController):
             exit(1)
 
         username = parse_matrix_id(matrix_id)[0]
-        homeserver_url = await get_homeserver_for_matrix_id(matrix_id)
+        if not homeserver_url:
+            homeserver_url = await get_homeserver_for_matrix_id(matrix_id)
 
         # create admin user on synapse if it doesn't exist
         result = synapse_container.exec_run(
             f"register_new_matrix_user -c /data/homeserver.yaml -a -u {username} -p {password} http://localhost:8008"
         )
-        if "User ID already taken" not in result.output.decode("utf-8") and result.exit_code != 0:
+        if result.exit_code != 0:
             print(result.output.decode("utf-8"))
             exit(1)
 
-        async with MatrixClient(homeserver_url) as client:  # type: ignore
+        async with MatrixClient(homeserver_url) as client:
             client.user = username
-            await client.login(password)
+            await client.login(password=password)
             access_token = client.access_token
             await client.disable_ratelimiting(client.user_id)
 
@@ -53,10 +59,10 @@ class RegistrationController(AuthenticatedController):
         local: bool = False,
         homeserver_url: Optional[str] = None,
     ) -> Tuple[str, str]:
-        if local:
-            return await self._register_local(matrix_id, password)
         if not homeserver_url:
             homeserver_url = await get_homeserver_for_matrix_id(matrix_id)
+        if local:
+            return await self._register_local(matrix_id, password, homeserver_url=homeserver_url)
         async with MatrixClient(homeserver_url, access_token=self.access_token) as client:  # type: ignore
             access_token = await client.register_with_token(
                 matrix_id, password, registration_token
@@ -115,7 +121,9 @@ class RegistrationController(AuthenticatedController):
         """
         match action:
             case "create":
-                print(asyncio.run(self._create_token()))
+                token = asyncio.run(self._create_token())
+                print(token)
+                return token
             case "list":
                 print(f"FIXME: List not implemented yet.")
             case _:
