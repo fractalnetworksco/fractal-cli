@@ -129,7 +129,12 @@ class AuthController:
         self, matrix_id: str, password: Optional[str] = None, homeserver_url: Optional[str] = None
     ) -> Tuple[str, str]:
         if not homeserver_url:
-            homeserver_url = await get_homeserver_for_matrix_id(matrix_id)
+            homeserver_url, apex_changed = await get_homeserver_for_matrix_id(matrix_id)
+
+            if apex_changed:
+                response = input("Your homeserver apex has changed. Do you want to continue? (y/n)").lower()
+                if response != 'y':
+                    exit(1)
         if not password:
             password = prompt_matrix_password(matrix_id)
         async with MatrixClient(homeserver_url) as client:
