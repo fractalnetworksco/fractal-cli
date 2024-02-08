@@ -1,5 +1,6 @@
 import functools
 import os
+from hashlib import sha256
 from sys import exit
 from typing import Any, Callable, Optional, Tuple
 
@@ -7,7 +8,7 @@ from asgiref.sync import async_to_sync
 from clicz import cli_method
 from fractal.cli.utils import read_user_data, write_user_data
 from fractal.matrix import MatrixClient, get_homeserver_for_matrix_id
-from fractal.matrix.utils import prompt_matrix_password
+from fractal.matrix.utils import parse_matrix_id, prompt_matrix_password
 from nio import LoginError, WhoamiError
 
 
@@ -118,7 +119,9 @@ class AuthController:
     async def _login_with_access_token(
         self, access_token: str, homeserver_url: str
     ) -> Tuple[str, str, str]:
-        async with MatrixClient(homeserver_url=homeserver_url, access_token=access_token) as client:
+        async with MatrixClient(
+            homeserver_url=homeserver_url, access_token=access_token
+        ) as client:
             res = await client.whoami()
             if isinstance(res, WhoamiError):
                 raise MatrixLoginError(res.message)
@@ -128,18 +131,28 @@ class AuthController:
     async def _login_with_password(
         self, matrix_id: str, password: Optional[str] = None, homeserver_url: Optional[str] = None
     ) -> Tuple[str, str]:
+        apex_changed = False
         if not homeserver_url:
             homeserver_url, apex_changed = await get_homeserver_for_matrix_id(matrix_id)
 
             if apex_changed:
-                response = input("Your homeserver apex has changed. Do you want to continue? (y/n)").lower()
-                if response != 'y':
+                response = input(
+                    "Your homeserver apex has changed. Do you want to continue? (y/n) "
+                ).lower()
+                if response != "y":
                     exit(1)
         if not password:
-            password = prompt_matrix_password(matrix_id)
+            password = prompt_matrix_password(matrix_id, homeserver_url=homeserver_url)
         async with MatrixClient(homeserver_url) as client:
-            client.user = matrix_id
-            res = await client.login(password)
+            if apex_changed:
+                local, _ = parse_matrix_id(matrix_id=matrix_id)
+                unique_id = sha256(f"{local}{homeserver_url}".encode("utf-8")).hexdigest()[:4]
+                client.user = f"{local}-{unique_id}"
+                password = sha256(f"{password}{homeserver_url}".encode("utf-8")).hexdigest()
+                res = await client.login(password)
+            else:
+                client.user = matrix_id
+                res = await client.login(password)
             if isinstance(res, LoginError):
                 raise MatrixLoginError(res.message)
         return homeserver_url, res.access_token
@@ -161,13 +174,13 @@ class AuthController:
         match key:
             case "access_token":
                 print(data["access_token"])
-                return data['access_token']
+                return data["access_token"]
             case "homeserver_url":
                 print(data["homeserver_url"])
-                return data['homeserver_url']
+                return data["homeserver_url"]
             case "matrix_id":
                 print(data["matrix_id"])
-                return data['matrix_id']
+                return data["matrix_id"]
 
 
 class AuthenticatedController:
