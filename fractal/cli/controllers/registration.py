@@ -1,12 +1,14 @@
 import asyncio
+from hashlib import sha256
 import os
+from getpass import getpass
 from sys import exit
 from typing import Optional, Tuple
 
 import docker
 from clicz import cli_method
 from docker.models.containers import Container
-from fractal.cli.controllers.auth import AuthenticatedController
+from fractal.cli.controllers.auth import AuthenticatedController, auth_required
 from fractal.matrix import MatrixClient, get_homeserver_for_matrix_id
 from fractal.matrix.utils import parse_matrix_id
 from nio import LoginError
@@ -33,7 +35,7 @@ class RegistrationController(AuthenticatedController):
 
         username = parse_matrix_id(matrix_id)[0]
         if not homeserver_url:
-            homeserver_url = await get_homeserver_for_matrix_id(matrix_id)
+            homeserver_url, _ = await get_homeserver_for_matrix_id(matrix_id)
 
         # create admin user on synapse if it doesn't exist
         result = synapse_container.exec_run(
@@ -60,7 +62,7 @@ class RegistrationController(AuthenticatedController):
         homeserver_url: Optional[str] = None,
     ) -> Tuple[str, str]:
         if not homeserver_url:
-            homeserver_url = await get_homeserver_for_matrix_id(matrix_id)
+            homeserver_url, _ = await get_homeserver_for_matrix_id(matrix_id)
         if local:
             return await self._register_local(matrix_id, password, homeserver_url=homeserver_url)
         async with MatrixClient(homeserver_url, access_token=self.access_token) as client:  # type: ignore
@@ -68,6 +70,35 @@ class RegistrationController(AuthenticatedController):
                 matrix_id, password, registration_token
             )
         return access_token, homeserver_url
+
+    @auth_required
+    @cli_method
+    def register_remote(
+        self,
+        homeserver_url: str,
+        registration_token: str,
+    ):
+        """
+        Registers the currently logged in user on a given HomeServer.
+        ---
+        Args:
+            homeserver_url: Homeserver to register with.
+            registration_token: Registration token to use.
+
+        """
+
+        matrix_id = self.matrix_id
+        password = getpass(f"Enter {matrix_id}'s password: ")
+
+        unique = sha256(f"{matrix_id}{homeserver_url}".encode('utf-8')).hexdigest()[:4]
+
+        matrix_id = f"{matrix_id}-{unique}"
+
+        password = sha256(f"{password}{homeserver_url}".encode('utf-8')).hexdigest()
+
+        access_token, homeserver_url = asyncio.run(self._register(matrix_id=matrix_id, password=password, registration_token=registration_token, homeserver_url=homeserver_url))
+
+        print(access_token)
 
     @cli_method
     def register(
