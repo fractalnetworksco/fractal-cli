@@ -87,6 +87,7 @@ class RegistrationController(AuthenticatedController):
 
         """
 
+
         matrix_id = self.matrix_id
         password = getpass(f"Enter {matrix_id}'s password: ")
 
@@ -99,6 +100,8 @@ class RegistrationController(AuthenticatedController):
         access_token, homeserver_url = asyncio.run(self._register(matrix_id=matrix_id, password=password, registration_token=registration_token, homeserver_url=homeserver_url))
 
         print(access_token)
+
+        return access_token, homeserver_url
 
     @cli_method
     def register(
