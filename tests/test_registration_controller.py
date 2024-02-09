@@ -121,7 +121,7 @@ async def test_registration_controller_register_local_no_homeserver(test_homeser
 
     # patch get_homeserver_for_matrix_id() to return a verifiable homeserver_url
     with patch('fractal.cli.controllers.registration.get_homeserver_for_matrix_id') as mock_get_homeserver:
-        mock_get_homeserver.return_value = test_homeserver_url
+        mock_get_homeserver.return_value = [test_homeserver_url, False]
         access_token, homeserver_url = await test_registration_controller._register_local(
             matrix_id=matrix_id, password=password
         )
@@ -203,7 +203,7 @@ async def test_registration_controller_register_no_homeserver(test_registration_
 
     # patch get_homeserver_for_matrix_id to have it return a verifiable homeserver_url
     with patch('fractal.cli.controllers.registration.get_homeserver_for_matrix_id') as mock_get_homeserver:
-        mock_get_homeserver.return_value = test_homeserver_url
+        mock_get_homeserver.return_value = [test_homeserver_url, False]
         _, homeserver_url = await test_registration_controller._register(
             matrix_id=matrix_id,
             password=password,
