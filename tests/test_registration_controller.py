@@ -1,4 +1,5 @@
 import secrets
+import asyncio
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -6,6 +7,7 @@ from fractal.cli.controllers.registration import (
     RegistrationController,
     get_homeserver_for_matrix_id,
 )
+from fractal.cli.controllers.auth import AuthController
 
 
 async def test_registration_controller_register_local_error_getting_homeserver_container():
@@ -308,20 +310,36 @@ def test_registration_controller_token_cases():
 
 # @pytest.skip(reason='Error on registration due to user id already being taken.')
 def test_registration_controller_register_remote_functional_test(
-    test_homeserver_url, test_registration_token, logged_in_auth_controller 
+    test_homeserver_url, test_registration_token, 
 ):
     """
     FIXME: Needs to be logged in, error on registration because user id is already taken.
     """
 
+    matrix_id = f"@test-user-{secrets.token_hex(8)}:localhost"
+    password = "test_password"
+
     # create a RegistrationController object
     test_registration_controller = RegistrationController()
 
+    access_token, homeserver_url = asyncio.run(test_registration_controller._register_local(
+        matrix_id=matrix_id, password=password, homeserver_url=test_homeserver_url  # type:ignore
+    ))
+
+    auth_cntrl = AuthController()
+    # log the user in patching prompt_matrix_password to use preset password
+    with patch(
+        "fractal.cli.controllers.auth.prompt_matrix_password", new_callable=MagicMock()
+    ) as mock_password_prompt:
+        mock_password_prompt.return_value = password
+        auth_cntrl.login(matrix_id=matrix_id, homeserver_url=homeserver_url)
+
+
     # call register_remote and store the values returned
     with patch('fractal.cli.controllers.registration.getpass', new_callable=MagicMock()) as mock_getpass:
-        mock_getpass.return_value = "admin"
+        mock_getpass.return_value = password
         returned_access_token, returned_homeserver = test_registration_controller.register_remote(
-            test_homeserver_url, test_registration_token
+            homeserver_url, test_registration_token
         )
 
     # verify that the homeserver returned matches the homeserver fixture passed to the function
