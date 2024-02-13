@@ -1,5 +1,5 @@
 import secrets
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 from fractal.cli.controllers.registration import (
@@ -306,9 +306,9 @@ def test_registration_controller_token_cases():
     mock_print.assert_called_once_with("Invalid action. Must be either 'create'")
 
 
-@pytest.skip(reason='Error on registration due to user id already being taken.')
+# @pytest.skip(reason='Error on registration due to user id already being taken.')
 def test_registration_controller_register_remote_functional_test(
-    test_homeserver_url, test_registration_token, logged_in_auth_controller
+    test_homeserver_url, test_registration_token, logged_in_auth_controller 
 ):
     """
     FIXME: Needs to be logged in, error on registration because user id is already taken.
@@ -318,9 +318,11 @@ def test_registration_controller_register_remote_functional_test(
     test_registration_controller = RegistrationController()
 
     # call register_remote and store the values returned
-    returned_access_token, returned_homeserver = test_registration_controller.register_remote(
-        test_homeserver_url, test_registration_token
-    )
+    with patch('fractal.cli.controllers.registration.getpass', new_callable=MagicMock()) as mock_getpass:
+        mock_getpass.return_value = "admin"
+        returned_access_token, returned_homeserver = test_registration_controller.register_remote(
+            test_homeserver_url, test_registration_token
+        )
 
     # verify that the homeserver returned matches the homeserver fixture passed to the function
     assert returned_homeserver == test_homeserver_url
