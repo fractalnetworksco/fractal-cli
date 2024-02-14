@@ -11,3 +11,4 @@ omit =
     homeserver/app/*
     **/cache/manage.py
     **/migrations/*
+    fractal/cli/__main__.py

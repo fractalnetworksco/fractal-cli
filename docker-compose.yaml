@@ -29,6 +29,8 @@ services:
       ENV: test
       TEST_CONFIG_DIR: /test-config
       TEST_HOMESERVER_URL: http://synapse:8008
+      # not actually running a second synapse currently
+      TEST_ALTERNATE_HOMESERVER_URL: https://synapse2:8008
       SYNAPSE_DOCKER_LABEL: "org.homeserver.test=true"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
