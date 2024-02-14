@@ -87,15 +87,18 @@ class RegistrationController(AuthenticatedController):
 
         """
 
+        # Get the user's login creds
         matrix_id = self.matrix_id
         password = getpass(f"Enter {matrix_id}'s password: ")
 
+        # Generate a deterministic unique ID to append to the current user's matrix id
         unique = sha256(f"{matrix_id}{homeserver_url}".encode("utf-8")).hexdigest()[:4]
-
         matrix_id = f"{matrix_id}-{unique}"
 
+        # Generate a deterministic password using the user's password and homeserver
         password = sha256(f"{password}{homeserver_url}".encode("utf-8")).hexdigest()
 
+        # Register the user using the newly generated creds
         access_token, homeserver_url = asyncio.run(
             self._register(
                 matrix_id=matrix_id,
@@ -106,7 +109,6 @@ class RegistrationController(AuthenticatedController):
         )
 
         print(access_token)
-
         return access_token, homeserver_url
 
     @cli_method
