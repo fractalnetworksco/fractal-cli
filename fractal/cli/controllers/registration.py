@@ -1,7 +1,7 @@
 import asyncio
-from hashlib import sha256
 import os
 from getpass import getpass
+from hashlib import sha256
 from sys import exit
 from typing import Optional, Tuple
 
@@ -87,17 +87,23 @@ class RegistrationController(AuthenticatedController):
 
         """
 
-
         matrix_id = self.matrix_id
         password = getpass(f"Enter {matrix_id}'s password: ")
 
-        unique = sha256(f"{matrix_id}{homeserver_url}".encode('utf-8')).hexdigest()[:4]
+        unique = sha256(f"{matrix_id}{homeserver_url}".encode("utf-8")).hexdigest()[:4]
 
         matrix_id = f"{matrix_id}-{unique}"
 
-        password = sha256(f"{password}{homeserver_url}".encode('utf-8')).hexdigest()
+        password = sha256(f"{password}{homeserver_url}".encode("utf-8")).hexdigest()
 
-        access_token, homeserver_url = asyncio.run(self._register(matrix_id=matrix_id, password=password, registration_token=registration_token, homeserver_url=homeserver_url))
+        access_token, homeserver_url = asyncio.run(
+            self._register(
+                matrix_id=matrix_id,
+                password=password,
+                registration_token=registration_token,
+                homeserver_url=homeserver_url,
+            )
+        )
 
         print(access_token)
 

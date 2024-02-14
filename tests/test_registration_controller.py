@@ -1,6 +1,7 @@
 import secrets
 import asyncio
-from unittest.mock import patch, MagicMock
+from hashlib import sha256
+from unittest.mock import patch, MagicMock, AsyncMock
 
 import pytest
 from fractal.cli.controllers.registration import (
@@ -310,10 +311,10 @@ def test_registration_controller_token_cases():
 
 # @pytest.skip(reason='Error on registration due to user id already being taken.')
 def test_registration_controller_register_remote_functional_test(
-    test_homeserver_url, test_registration_token, 
+    test_homeserver_url, test_registration_token, test_alternate_homeserver_url,
 ):
     """
-    FIXME: Needs to be logged in, error on registration because user id is already taken.
+    TODO: Add functionality to test using synapse2 in the ci.
     """
 
     matrix_id = f"@test-user-{secrets.token_hex(8)}:localhost"
@@ -334,13 +335,28 @@ def test_registration_controller_register_remote_functional_test(
         mock_password_prompt.return_value = password
         auth_cntrl.login(matrix_id=matrix_id, homeserver_url=homeserver_url)
 
+    test_registration_controller = RegistrationController()
+    test_registration_controller._register = AsyncMock()
+    test_registration_controller._register.return_value = ["test_token", test_alternate_homeserver_url]
 
     # call register_remote and store the values returned
     with patch('fractal.cli.controllers.registration.getpass', new_callable=MagicMock()) as mock_getpass:
         mock_getpass.return_value = password
         returned_access_token, returned_homeserver = test_registration_controller.register_remote(
-            homeserver_url, test_registration_token
+            test_alternate_homeserver_url, test_registration_token
         )
 
     # verify that the homeserver returned matches the homeserver fixture passed to the function
-    assert returned_homeserver == test_homeserver_url
+    assert returned_homeserver == test_alternate_homeserver_url
+    assert returned_homeserver != test_homeserver_url
+
+    unique = sha256(f"{matrix_id}{test_alternate_homeserver_url}".encode("utf-8")).hexdigest()[:4]
+    remote_matrix_id = f"{matrix_id}-{unique}"
+    remote_password = sha256(f"{password}{test_alternate_homeserver_url}".encode("utf-8")).hexdigest()
+
+    test_registration_controller._register.assert_called_with(
+        matrix_id=remote_matrix_id,
+        password=remote_password,
+        registration_token=test_registration_token,
+        homeserver_url=test_alternate_homeserver_url
+    )
