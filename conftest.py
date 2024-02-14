@@ -25,7 +25,7 @@ def test_homeserver_url() -> str:
 
 @pytest.fixture
 def test_alternate_homeserver_url() -> str:
-    return os.environ.get("TEST_HOMESERVER_URL", "http://localhost:8010")
+    return os.environ.get("TEST_ALTERNATE_HOMESERVER_URL", "http://localhost:8010")
 
 @pytest.fixture(scope="function")
 def logged_in_auth_controller(test_homeserver_url):
