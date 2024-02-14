@@ -314,6 +314,7 @@ def test_registration_controller_register_remote_functional_test(
     test_homeserver_url, test_registration_token, test_alternate_homeserver_url,
 ):
     """
+    Tests that the homeserver url passed to register_remote is returned after registration.
     TODO: Add functionality to test using synapse2 in the ci.
     """
 
@@ -327,7 +328,9 @@ def test_registration_controller_register_remote_functional_test(
         matrix_id=matrix_id, password=password, homeserver_url=test_homeserver_url  # type:ignore
     ))
 
+    # create an AuthController object
     auth_cntrl = AuthController()
+
     # log the user in patching prompt_matrix_password to use preset password
     with patch(
         "fractal.cli.controllers.auth.prompt_matrix_password", new_callable=MagicMock()
@@ -335,6 +338,7 @@ def test_registration_controller_register_remote_functional_test(
         mock_password_prompt.return_value = password
         auth_cntrl.login(matrix_id=matrix_id, homeserver_url=homeserver_url)
 
+    # recreate the RegistrationController object with the user being logged in
     test_registration_controller = RegistrationController()
     test_registration_controller._register = AsyncMock()
     test_registration_controller._register.return_value = ["test_token", test_alternate_homeserver_url]
@@ -350,10 +354,12 @@ def test_registration_controller_register_remote_functional_test(
     assert returned_homeserver == test_alternate_homeserver_url
     assert returned_homeserver != test_homeserver_url
 
+    # hash the login creds to verify they were passed as parameters in the function
     unique = sha256(f"{matrix_id}{test_alternate_homeserver_url}".encode("utf-8")).hexdigest()[:4]
     remote_matrix_id = f"{matrix_id}-{unique}"
     remote_password = sha256(f"{password}{test_alternate_homeserver_url}".encode("utf-8")).hexdigest()
 
+    # verify arguments
     test_registration_controller._register.assert_called_with(
         matrix_id=remote_matrix_id,
         password=remote_password,
