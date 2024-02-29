@@ -1,4 +1,5 @@
 import os
+from hashlib import sha256
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -11,6 +12,7 @@ from fractal.cli.controllers.auth import (
     WhoamiError,
 )
 from fractal.cli.utils import read_user_data
+from fractal.matrix.utils import parse_matrix_id
 
 
 def test_authcontroller_login_no_access_token(mock_getpass, test_homeserver_url):
@@ -244,8 +246,8 @@ def test_authcontroller_logout_filenotfound():
 
 
 def test_authcontroller_logout_keyerror():
-    """ 
-    Tests that an exception is raised if there is an error accessing 
+    """
+    Tests that an exception is raised if there is an error accessing
     """
 
     # create an AuthController object
@@ -315,9 +317,11 @@ async def test_authcontroller_login_with_access_token_whoami_error(test_homeserv
         assert str(e.value) == "test_message"
 
 
-async def test_authcontroller_login_with_access_token_no_error(test_homeserver_url, test_user_access_token):
-    """ 
-    Tests that login variables are returned if there are no errors in the 
+async def test_authcontroller_login_with_access_token_no_error(
+    test_homeserver_url, test_user_access_token
+):
+    """
+    Tests that login variables are returned if there are no errors in the
     _login_with_access_token() function.
     """
 
@@ -343,7 +347,7 @@ async def test_authcontroller_login_with_access_token_no_error(test_homeserver_u
 
 
 async def test_authcontroller_login_with_password_no_password_no_homeserver(test_homeserver_url):
-    """ 
+    """
     Tests that get_homeserver_for_matrix_id and prompt_matrix_password are called if neither
     a password or homeserver_url are passed to _login_with_password
     """
@@ -357,15 +361,16 @@ async def test_authcontroller_login_with_password_no_password_no_homeserver(test
     with patch(
         "fractal.cli.controllers.auth.get_homeserver_for_matrix_id", new_awaitable=AsyncMock()
     ) as mock_get_homeserver:
-        mock_get_homeserver.return_value = homeserver_url
+        mock_get_homeserver.return_value = [homeserver_url, False]
         with patch(
             "fractal.cli.controllers.auth.prompt_matrix_password", new_callable=MagicMock()
         ) as mock_password_prompt:
             mock_password_prompt.return_value = "admin"
-            (
-                returned_homeserver_url,
-                returned_access_token,
-            ) = await auth_cntrl._login_with_password(matrix_id=matrix_id)
+            with patch('fractal.cli.controllers.auth.input') as mock_input:
+                (
+                    returned_homeserver_url,
+                    returned_access_token,
+                ) = await auth_cntrl._login_with_password(matrix_id=matrix_id)
 
     # verify the patched functions are called once
     mock_get_homeserver.assert_awaited_once()
@@ -374,9 +379,100 @@ async def test_authcontroller_login_with_password_no_password_no_homeserver(test
     # verify that the homeserver_url returned by _login_with_password matches what was expected
     assert returned_homeserver_url == homeserver_url
 
+    # verify that input was never called asking the user if they wished to continue
+    mock_input.assert_not_called()
+
+
+async def test_authcontroller_login_with_password_no_homeserver_apex_changed(test_homeserver_url):
+    """ 
+    Tests that if the apex homeserver changed, a new password and username is hashed for
+    a remote login.
+    """
+
+    # create an AuthController object and login variables
+    auth_cntrl = AuthController()
+    matrix_id = "@admin:localhost"
+    homeserver_url = test_homeserver_url
+    cli_password = "admin"
+
+    # patch get_homeserver_for_matrix_id and prompt_matrix_password to verify function calls
+    with patch(
+        "fractal.cli.controllers.auth.get_homeserver_for_matrix_id", new_awaitable=AsyncMock()
+    ) as mock_get_homeserver:
+        mock_get_homeserver.return_value = [homeserver_url, True]
+        with patch(
+            "fractal.cli.controllers.auth.prompt_matrix_password", new_callable=MagicMock()
+        ) as mock_password_prompt:
+            mock_password_prompt.return_value = cli_password
+            # patch input to return 'y', signifying that the user wants to proceed with the
+                # remote login
+            with patch(
+                "fractal.cli.controllers.auth.input", new_callable=MagicMock()
+            ) as mock_input:
+                mock_input.return_value = "y"
+                # patch login to verify the new password
+                with patch("fractal.matrix.async_client.FractalAsyncClient.login") as mock_login:
+                    (
+                        returned_homeserver_url,
+                        returned_access_token,
+                    ) = await auth_cntrl._login_with_password(matrix_id=matrix_id)
+
+    # verify that input was called with the expected string
+    mock_input.assert_called_with(
+        "Your homeserver apex has changed. Do you want to continue? (y/n) "
+    )
+
+    # hash the user's matrix id and homeserver to set the expected password used to log in
+    expected_password = sha256(f"{cli_password}{homeserver_url}".encode("utf-8")).hexdigest()
+    mock_login.assert_called_with(expected_password)
+
+    assert returned_homeserver_url == test_homeserver_url
+
+async def test_authcontroller_login_with_password_no_homeserver_apex_changed_no_continue(test_homeserver_url):
+    """
+    Tests that the sign in process is terminated if the user does not wish to log in through
+    another server.
+    """
+
+    # create an AuthController object and login variables
+    auth_cntrl = AuthController()
+    matrix_id = "@admin:localhost"
+    homeserver_url = test_homeserver_url
+    cli_password = "admin"
+
+    # patch get_homeserver_for_matrix_id and prompt_matrix_password to verify function calls
+    with patch(
+        "fractal.cli.controllers.auth.get_homeserver_for_matrix_id", new_awaitable=AsyncMock()
+    ) as mock_get_homeserver:
+        mock_get_homeserver.return_value = [homeserver_url, True]
+        with patch(
+            "fractal.cli.controllers.auth.prompt_matrix_password", new_callable=MagicMock()
+        ) as mock_password_prompt:
+            mock_password_prompt.return_value = cli_password
+            # patch input to return 'n', signifying that the user does NOT want 
+                # to proceed with the remote login
+            with patch(
+                "fractal.cli.controllers.auth.input", new_callable=MagicMock()
+            ) as mock_input:
+                mock_input.return_value = "n"
+                # patch login to verify it was not called
+                with patch("fractal.matrix.async_client.FractalAsyncClient.login") as mock_login:
+                    with pytest.raises(SystemExit):
+                        (
+                            returned_homeserver_url,
+                            returned_access_token,
+                        ) = await auth_cntrl._login_with_password(matrix_id=matrix_id)
+
+    # verify that input was called with the expected string
+    mock_input.assert_called_with(
+        "Your homeserver apex has changed. Do you want to continue? (y/n) "
+    )
+
+    # verify that login was not called
+    mock_login.assert_not_called()
 
 async def test_authcontroller_login_with_password_loginerror(test_homeserver_url):
-    """ 
+    """
     Tests that an exception is raised if a LoginError is returned by client.login
     """
 
@@ -385,7 +481,7 @@ async def test_authcontroller_login_with_password_loginerror(test_homeserver_url
     homeserver_url = test_homeserver_url
 
     # patch get_homeserver_for_matrix_id and prompt_matrix_password to verify they are not
-        # called. Patch the client.login function to raise an exception
+    # called. Patch the client.login function to raise an exception
     with patch(
         "fractal.cli.controllers.auth.get_homeserver_for_matrix_id", new_awaitable=AsyncMock()
     ) as mock_get_homeserver:
@@ -414,7 +510,7 @@ async def test_authcontroller_login_with_password_loginerror(test_homeserver_url
 
 
 async def test_authcontroller_login_invalid_password(test_homeserver_url):
-    """ 
+    """
     Tests that an exception is raised if an invalid password is entered
     """
 
@@ -434,7 +530,7 @@ async def test_authcontroller_login_invalid_password(test_homeserver_url):
 
 
 async def test_authcontroller_login_with_password_no_error(test_homeserver_url):
-    """ 
+    """
     Tests that no errors are raised and that values are returned if when a valid password
     is given to the function
     """
@@ -460,7 +556,7 @@ async def test_authcontroller_login_with_password_no_error(test_homeserver_url):
 
 
 def test_authcontroller_show_filenotfound():
-    """ 
+    """
     Tests that an exception is raised if show() is called when the user is not logged in
     """
 
@@ -477,7 +573,7 @@ def test_authcontroller_show_filenotfound():
 
 
 def test_authcontroller_show_keyerror():
-    """ 
+    """
     Tests that an exception is raised if a KeyError is raised when read_user_data is
     called
     """
@@ -496,11 +592,10 @@ def test_authcontroller_show_keyerror():
 
 
 def test_authcontroller_show_key_cases(test_homeserver_url):
-    """ 
+    """
     Tests the non-error cases of show() and verifies the print statements associated with
     their key value.
     """
-
 
     # create an AuthController object and login variables
     auth_cntrl = AuthController()
@@ -519,8 +614,7 @@ def test_authcontroller_show_key_cases(test_homeserver_url):
 
     data, _ = read_user_data("matrix.creds.yaml")
 
-    access_token = data['access_token']
-
+    access_token = data["access_token"]
 
     # access token case
     key = "access_token"
