@@ -71,14 +71,22 @@ def test_utils_read_filenotfound():
 
 def test_utils_read_yamlerror(test_yaml_dict):
     """
+    Tests that an exception is raised if safe_load raises an exception.
     """
 
+    # generate a file name
     file_name = str(uuid4())
 
+    # verify that there is no fractal data directory before writing
     assert not os.path.exists(FRACTAL_DATA_DIR)
+
+    # call write_user_data to create a fractal data directory
     write_user_data(test_yaml_dict, file_name)
+
+    # verify that the fractal data direcotry exists with the file name in it
     assert os.path.exists(f"{FRACTAL_DATA_DIR}/{file_name}")
 
+    # patch safe_load to have it raise an exception
     with patch('fractal.cli.utils.yaml.safe_load') as mock_load:
         mock_load.side_effect = yaml.YAMLError()
         with pytest.raises(yaml.YAMLError):
@@ -87,14 +95,23 @@ def test_utils_read_yamlerror(test_yaml_dict):
     
 def test_utils_read_verify_read(test_yaml_dict):
     """
+    Tests that if no exceptions are raised, the yaml file is successfully read.
     """
 
+    # generate a file name
     file_name = str(uuid4())
 
+    # verify that the fractal data directory exists
     assert not os.path.exists(FRACTAL_DATA_DIR)
+
+    # call write_user_data to create the fractal data directory and the file
     write_user_data(test_yaml_dict, file_name)
+
+    # verify that the fractal data directory exists with the file in it
     assert os.path.exists(f"{FRACTAL_DATA_DIR}/{file_name}")
 
+    # call read_user_data passing the file name and store the result
     yaml_file, _ = read_user_data(filename=file_name)
 
+    # verify that the yaml file that is read matches what was expected
     assert yaml_file == test_yaml_dict
