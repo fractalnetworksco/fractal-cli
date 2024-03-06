@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fractal.cli import fmt
+from fractal.cli.fmt import Table
 from rich.text import Text
 
 
@@ -78,9 +79,10 @@ def test_render_health_invalid_health_status():
     assert f"Got unsupported health color when rendering health: {status}" in str(e.value)
 
 
-@pytest.mark.skip("Not finished")
 def test_pretty_link_link_domain_return():
-    fmt._pretty_link = MagicMock()
+    link_obj = {"default": {"domain": "example.com"}}
+    link_domain = fmt._pretty_link(link_obj)
+    assert link_domain == "https://example.com"
 
 
 def test_pretty_link_keyerror():
@@ -88,3 +90,76 @@ def test_pretty_link_keyerror():
     with pytest.raises(Exception) as e:
         fmt._pretty_link(dic)
     assert "Failed to pretty print link domain" in str(e.value)
+
+
+def test_json_to_table_if_given_dictionary_wrap_it():
+    title = "Test Title"
+    data_dict = {"key": "value"}
+    table = fmt.json_to_table(title=title, data=data_dict)
+    # Table class requires list so if our final table is of class Table, then data successfully turned into list
+    assert isinstance(data_dict, dict) and isinstance(table, Table)
+
+
+def test_json_to_table_add_column():
+    title = "Test Title"
+    data = {"key1": "value1", "key2": "value2", "key3": "value3"}
+    table = fmt.json_to_table(title=title, data=data)
+    # Number of columns in final table matches the number of keys
+    assert len(table.columns) == len(data)
+
+
+def test_json_to_table_data_contains_links():
+    title = "Test Title"
+    data = [{"links": {"default": {"domain": "example.com"}}}]
+    table = fmt.json_to_table(title=title, data=data)
+    # Key correctly matched with links and _pretty_link returned link as expected
+    assert any("https://example.com" in column._cells for column in table.columns)
+
+
+def test_json_to_table_render_health_data_contains_health():
+    title = "Test Title"
+    data = [{"health": "green"}]
+    table = fmt.json_to_table(title=title, data=data)
+    # We don't need to check for bold green since if it wasn't there, it would fail our renderhealth test
+    assert str(table.columns[0]._cells[0]) == "green"
+
+
+def test_json_to_table_data_contains_size():
+    title = "Test Title"
+    size = 1024
+    data = [{"size": size}]
+    table = fmt.json_to_table(title=title, data=data)
+    # Size correctly converted and returned
+    assert any("1.0 KiB" in column._cells for column in table.columns)
+
+
+def test_json_to_table_exclude_list_continues_past_key():
+    title = "Test Title"
+    data = {"key1": "value1", "key2": "value2", "key3": "value3"}
+    exclude_list = ["key2"]
+    table = fmt.json_to_table(title=title, data=data, exclude=exclude_list)
+    # If false, key2 was successfully excluded
+    assert any("value2" in column._cells for column in table.columns) == False
+
+
+def test_print_json_to_table():
+    title = "Test Title"
+    data = {"key1": "value1", "key2": "value2", "key3": "value3"}
+    with patch("fractal.cli.fmt.Console.print") as mock_print:
+        fmt.print_json_to_table(title=title, data=data)
+        mock_print.assert_called_once()
+
+
+def test_print_json_with_indent():
+    data = {"key1": "value1", "key2": "value2", "key3": "value3"}
+    indent = 4
+    with patch("fractal.cli.fmt.json.dumps") as mock_dump:
+        fmt.print_json(data=data, indent=indent)
+        mock_dump.assert_called_once_with(data, indent=indent, default=str)
+
+
+def test_print_json_without_indent():
+    data = {"key1": "value1", "key2": "value2", "key3": "value3"}
+    with patch("fractal.cli.fmt.json.dumps") as mock_dump:
+        fmt.print_json(data=data, indent=None)
+        mock_dump.assert_called_once_with(data, default=str)
