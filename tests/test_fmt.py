@@ -161,5 +161,30 @@ def test_print_json_with_indent():
 def test_print_json_without_indent():
     data = {"key1": "value1", "key2": "value2", "key3": "value3"}
     with patch("fractal.cli.fmt.json.dumps") as mock_dump:
-        fmt.print_json(data=data, indent=None)
+        fmt.print_json(data=data, indent=0)
         mock_dump.assert_called_once_with(data, default=str)
+
+
+def test_display_data_format_is_json():
+    data = {"key1": "value1", "key2": "value2", "key3": "value3"}
+    with patch("fractal.cli.fmt.print_json") as mock_print_json:
+        fmt.display_data(data=data, format="json")
+        mock_print_json.assert_called_once_with(data)
+
+
+def test_display_data_format_is_table():
+    data = {"key1": "value1", "key2": "value2", "key3": "value3"}
+    title = "Test title"
+    exclude_list = ["key2"]
+    with patch("fractal.cli.fmt.print_json_to_table") as mock_print_json_to_table:
+        fmt.display_data(data=data, title=title, exclude=exclude_list)
+        mock_print_json_to_table.assert_called_once_with(title, data, exclude_list)
+
+
+def test_display_data_format_is_unsupported_display():
+    data = {"key1": "value1", "key2": "value2", "key3": "value3"}
+    title = "Test title"
+    exclude_list = ["key2"]
+    with patch("fractal.cli.fmt.print_json_to_table") as mock_print_json_to_table:
+        fmt.display_data(data=data, title=title, format="invalid", exclude=exclude_list)
+        mock_print_json_to_table.assert_called_once_with(title, data, exclude_list)
