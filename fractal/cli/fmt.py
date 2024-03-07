@@ -104,7 +104,6 @@ def json_to_table(title: str, data: list[dict] | dict, exclude: list[str] = []) 
                     col.append(str(row[key]))
 
         table.add_row(*col, end_section=True)
-
     return table
 
 
