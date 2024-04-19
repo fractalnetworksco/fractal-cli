@@ -193,6 +193,14 @@ class AuthenticatedController:
     def __init__(self):
         self.check_if_user_is_authenticated()
 
+    def _login(self, homeserver_url: str):
+        if not self.access_token:
+            matrix_id = input(f"Enter your matrix ID for {homeserver_url}: ")
+            access_token = AuthController().login(matrix_id, homeserver_url=homeserver_url)
+
+            self.matrix_id = matrix_id
+            self.access_token = access_token
+
     @classmethod
     def get_creds(cls) -> Optional[Tuple[Optional[str], Optional[str], Optional[str]]]:
         """
