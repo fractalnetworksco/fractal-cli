@@ -115,8 +115,8 @@ class RegistrationController(AuthenticatedController):
     def register(
         self,
         matrix_id: str,
-        password: str,
-        registration_token: str,
+        registration_token: Optional[str] = None,
+        password: Optional[str] = None,
         homeserver_url: Optional[str] = None,
         local: bool = False,
     ):
@@ -126,12 +126,19 @@ class RegistrationController(AuthenticatedController):
         ---
         Args:
             matrix_id: Matrix ID of user to register.
-            password: Password to register with.
             registration_token: Registration token to use.
+            password: Password to register with.
             homeserver_url: Homeserver to register with.
             local: Whether to register locally or not.
 
         """
+        if not password:
+            password = getpass("Enter your desired password: ")
+
+        if not local and not registration_token:
+            print("Registration token is required for remote registration.")
+            exit(1)
+
         access_token, homeserver_url = asyncio.run(
             self._register(
                 matrix_id,
