@@ -1,5 +1,6 @@
 import functools
 import os
+import sys
 from hashlib import sha256
 from sys import exit
 from typing import Any, Callable, Optional, Tuple
@@ -111,7 +112,10 @@ class AuthController:
 
         if os.path.exists(path):
             os.remove(path)
-            async_to_sync(_logout)()
+            try:
+                async_to_sync(_logout)()
+            except Exception as e:
+                print(f"Failed to clear session from matrix server: {e}", file=sys.stderr)
             print("Successfully logged out. Have a nice day.")
 
     logout.clicz_aliases = ["logout"]
