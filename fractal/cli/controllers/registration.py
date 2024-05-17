@@ -8,7 +8,11 @@ from typing import Optional, Tuple
 import docker
 from clicz import cli_method
 from docker.models.containers import Container
-from fractal.cli.controllers.auth import AuthenticatedController, auth_required
+from fractal.cli.controllers.auth import (
+    AuthController,
+    AuthenticatedController,
+    auth_required,
+)
 from fractal.matrix import MatrixClient, get_homeserver_for_matrix_id
 from fractal.matrix.utils import parse_matrix_id
 from nio import LoginError
@@ -148,7 +152,11 @@ class RegistrationController(AuthenticatedController):
                 local=local,
             )
         )
-        print(access_token)
+
+        # login as the registered user
+        AuthController().login(
+            matrix_id, homeserver_url=homeserver_url, access_token=access_token
+        )
 
     register.clicz_aliases = ["register"]
 

@@ -172,7 +172,7 @@ class AuthController:
         try:
             data, _ = read_user_data(self.TOKEN_FILE)
         except (KeyError, FileNotFoundError):
-            print(f"You are not logged in")
+            print("You are not logged in")
             exit(1)
 
         match key:
@@ -206,15 +206,17 @@ class AuthenticatedController:
             self.access_token = access_token
 
     @classmethod
-    def get_creds(cls) -> Optional[Tuple[Optional[str], Optional[str], Optional[str]]]:
+    def get_creds(cls) -> Optional[Tuple[str, str, str]]:
         """
         Returns the access token of the logged in user.
         """
         try:
             token_file, _ = read_user_data(cls.TOKEN_FILE)
-            access_token = token_file.get("access_token")
-            homeserver_url = token_file.get("homeserver_url")
-            matrix_id = token_file.get("matrix_id")
+            access_token = token_file["access_token"]
+            homeserver_url = token_file["homeserver_url"]
+            matrix_id = token_file["matrix_id"]
+        except KeyError:
+            return None
         except FileNotFoundError:
             return None
 
