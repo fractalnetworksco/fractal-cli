@@ -157,6 +157,8 @@ class RegistrationController(AuthenticatedController):
         AuthController().login(
             matrix_id, homeserver_url=homeserver_url, access_token=access_token
         )
+        self.access_token = access_token
+        self.matrix_id = matrix_id
 
     register.clicz_aliases = ["register"]
 
@@ -182,7 +184,7 @@ class RegistrationController(AuthenticatedController):
                 print(token)
                 return token
             case "list":
-                print(f"FIXME: List not implemented yet.")
+                print("FIXME: List not implemented yet.")
             case _:
                 print("Invalid action. Must be either 'create'")
 
