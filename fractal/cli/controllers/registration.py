@@ -163,7 +163,7 @@ class RegistrationController(AuthenticatedController):
     register.clicz_aliases = ["register"]
 
     async def _create_token(self):
-        async with MatrixClient(self.homeserver_url, access_token=self.access_token) as client:  # type: ignore
+        async with MatrixClient(self.homeserver_url, matrix_id=self.matrix_id, access_token=self.access_token) as client:  # type: ignore
             return await client.generate_registration_token()
 
     @cli_method
