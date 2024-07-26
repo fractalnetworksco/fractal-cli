@@ -11,7 +11,7 @@ from django.db import transaction
 from fractal.cli.utils import read_user_data, write_user_data
 from fractal.matrix import MatrixClient, get_homeserver_for_matrix_id
 from fractal.matrix.utils import parse_matrix_id, prompt_matrix_password
-from fractal_database.utils import use_django
+from fractal_database.utils import is_db_initialized
 from nio import LoginError, WhoamiError
 
 
@@ -24,14 +24,12 @@ class AuthController:
     TOKEN_FILE = "matrix.creds.yaml"
 
     @cli_method
-    # @use_django move to store credential login to _login so we can still login without initing
     def login(
         self,
         matrix_id: str,
         password: Optional[str] = None,
         homeserver_url: Optional[str] = None,
         access_token: Optional[str] = None,
-        store_credential: bool = False,
         **kwargs,
     ):
         """
@@ -42,7 +40,6 @@ class AuthController:
             password: Password for the Matrix ID.
             homeserver_url: Homeserver to login to.
             access_token: Access token to use for login.
-            store_credential: Create a MatrixCredential in the local database.
 
         """
         if not access_token:
@@ -70,8 +67,7 @@ class AuthController:
             },
             self.TOKEN_FILE,
         )
-        if store_credential:
-            from fractal_database.models import Device
+        if is_db_initialized():
             from fractal_database_matrix.models import (
                 MatrixCredentials,
                 MatrixHomeserver,
