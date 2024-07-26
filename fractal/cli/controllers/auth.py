@@ -7,9 +7,11 @@ from typing import Any, Callable, Optional, Tuple
 
 from asgiref.sync import async_to_sync
 from clicz import cli_method
+from django.db import transaction
 from fractal.cli.utils import read_user_data, write_user_data
 from fractal.matrix import MatrixClient, get_homeserver_for_matrix_id
 from fractal.matrix.utils import parse_matrix_id, prompt_matrix_password
+from fractal_database.utils import is_db_initialized
 from nio import LoginError, WhoamiError
 
 
@@ -25,21 +27,24 @@ class AuthController:
     def login(
         self,
         matrix_id: str,
+        password: Optional[str] = None,
         homeserver_url: Optional[str] = None,
         access_token: Optional[str] = None,
+        **kwargs,
     ):
         """
         Login to a Matrix homeserver.
         ---
         Args:
-            matrix_id: Matrix ID of user to login as
-            homeserver_url: Homeserver to login to
+            matrix_id: Matrix ID of user to login as.
+            password: Password for the Matrix ID.
+            homeserver_url: Homeserver to login to.
             access_token: Access token to use for login.
 
         """
         if not access_token:
             homeserver_url, access_token = async_to_sync(self._login_with_password)(
-                matrix_id, homeserver_url=homeserver_url
+                matrix_id, homeserver_url=homeserver_url, password=password
             )
         else:
             if not homeserver_url:
@@ -62,6 +67,27 @@ class AuthController:
             },
             self.TOKEN_FILE,
         )
+        if is_db_initialized():
+            from fractal_database_matrix.models import (
+                MatrixCredentials,
+                MatrixHomeserver,
+            )
+
+            try:
+                hs = MatrixHomeserver.objects.get(url=homeserver_url)
+                MatrixCredentials.objects.create(
+                    matrix_id=matrix_id,
+                    access_token=access_token,
+                    homeserver=hs,
+                )
+            except MatrixHomeserver.DoesNotExist:
+                with transaction.atomic():
+                    hs = MatrixHomeserver.objects.create(url=homeserver_url)
+                    MatrixCredentials.objects.create(
+                        matrix_id=matrix_id,
+                        access_token=access_token,
+                        homeserver=hs,
+                    )
 
         print(f"Successfully logged in as {matrix_id}")
 
