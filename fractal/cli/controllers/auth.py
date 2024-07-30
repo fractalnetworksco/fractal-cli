@@ -30,6 +30,7 @@ class AuthController:
         password: Optional[str] = None,
         homeserver_url: Optional[str] = None,
         access_token: Optional[str] = None,
+        silent: bool = False,
         **kwargs,
     ):
         """
@@ -40,7 +41,7 @@ class AuthController:
             password: Password for the Matrix ID.
             homeserver_url: Homeserver to login to.
             access_token: Access token to use for login.
-
+            silent: Silently log in.
         """
         if not access_token:
             homeserver_url, access_token = async_to_sync(self._login_with_password)(
@@ -48,14 +49,19 @@ class AuthController:
             )
         else:
             if not homeserver_url:
-                print("Please provide a --homeserver-url if logging in with an access token.")
+                if not silent:
+                    print(
+                        "Please provide a --homeserver-url if logging in with an access token.",
+                        file=sys.stderr,
+                    )
                 exit(1)
             try:
                 matrix_id, homeserver_url, access_token = async_to_sync(
                     self._login_with_access_token
                 )(access_token, homeserver_url=homeserver_url)
             except MatrixLoginError as e:
-                print("Error logging in:", e)
+                if not silent:
+                    print(f"Error logging in: {e}", file=sys.stderr)
                 exit(1)
 
         # save access token to token file
@@ -89,7 +95,8 @@ class AuthController:
                         homeserver=hs,
                     )
 
-        print(f"Successfully logged in as {matrix_id}")
+        if not silent:
+            print(f"Successfully logged in as {matrix_id}")
 
     login.clicz_aliases = ["login"]
 
