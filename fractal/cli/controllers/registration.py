@@ -49,6 +49,9 @@ class RegistrationController(AuthenticatedController):
             print(result.output.decode("utf-8"))
             exit(1)
 
+        if not homeserver_url.startswith("http://") or homeserver_url.startswith("https://"):
+            homeserver_url = f"https://{homeserver_url}"
+
         async with MatrixClient(homeserver_url) as client:
             client.user = username
             await client.login(password=password)
