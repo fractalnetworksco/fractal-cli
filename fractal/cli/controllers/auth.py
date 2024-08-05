@@ -79,6 +79,9 @@ class AuthController:
                 MatrixHomeserver,
             )
 
+            if not homeserver_url.startswith(("http://", "https://")):
+                homeserver_url = f"https://{homeserver_url}"
+
             try:
                 hs = MatrixHomeserver.objects.get(url=homeserver_url)
                 MatrixCredentials.objects.create(

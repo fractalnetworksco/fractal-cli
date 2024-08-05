@@ -35,7 +35,7 @@ class RegistrationController(AuthenticatedController):
             ]  # type: ignore
         except Exception as e:
             print(f"No synapse server running locally: {e}.")
-            exit(1)
+            raise Exception(f"No synapse server running locally: {e}")
 
         username = parse_matrix_id(matrix_id)[0]
         if not homeserver_url:
@@ -47,9 +47,9 @@ class RegistrationController(AuthenticatedController):
         )
         if result.exit_code != 0:
             print(result.output.decode("utf-8"))
-            exit(1)
+            raise Exception(f"Failed to create user: {result.output.decode('utf-8')}")
 
-        if not homeserver_url.startswith("http://") or homeserver_url.startswith("https://"):
+        if not homeserver_url.startswith(("http://", "https://")):
             homeserver_url = f"https://{homeserver_url}"
 
         async with MatrixClient(homeserver_url) as client:
