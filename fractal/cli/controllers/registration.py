@@ -162,6 +162,7 @@ class RegistrationController(AuthenticatedController):
         )
         self.access_token = access_token
         self.matrix_id = matrix_id
+        self.homeserver_url = homeserver_url
 
     register.clicz_aliases = ["register"]
 
