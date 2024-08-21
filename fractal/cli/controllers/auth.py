@@ -9,7 +9,11 @@ from asgiref.sync import async_to_sync
 from clicz import cli_method
 from django.db import transaction
 from fractal.cli.utils import read_user_data, write_user_data
-from fractal.matrix import MatrixClient, get_homeserver_for_matrix_id
+from fractal.matrix import (
+    FractalAsyncClient,
+    MatrixClient,
+    get_homeserver_for_matrix_id,
+)
 from fractal.matrix.utils import parse_matrix_id, prompt_matrix_password
 from fractal_database.utils import is_db_initialized
 from nio import LoginError, WhoamiError
@@ -257,6 +261,19 @@ class AuthenticatedController:
             return None
 
         return access_token, homeserver_url, matrix_id
+
+    @classmethod
+    def create_matrix_client(cls) -> FractalAsyncClient:
+        """
+        Creates a matrix client with the current user's credentials.
+        """
+        creds = cls.get_creds()
+        if not creds:
+            print("You must be logged in to use this command.")
+            print("Login with fractal login.")
+            exit(1)
+        access_token, homeserver_url, matrix_id = creds
+        return FractalAsyncClient(homeserver_url, access_token)
 
     def check_if_user_is_authenticated(self) -> bool:
         """
