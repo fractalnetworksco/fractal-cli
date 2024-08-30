@@ -95,7 +95,7 @@ class AuthController:
                 )
             except MatrixHomeserver.DoesNotExist:
                 with transaction.atomic():
-                    hs = MatrixHomeserver.objects.create(url=homeserver_url)
+                    hs = MatrixHomeserver.objects.create(url=homeserver_url, name="Synapse")
                     MatrixCredentials.objects.create(
                         matrix_id=matrix_id,
                         access_token=access_token,
