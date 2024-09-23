@@ -147,7 +147,7 @@ class AuthController:
             return
 
         async def _logout():
-            async with MatrixClient(homeserver_url, access_token) as client:
+            async with MatrixClient(homeserver_url, access_token, max_timeouts=15) as client:
                 await client.logout()
 
         if os.path.exists(path):
@@ -164,7 +164,7 @@ class AuthController:
         self, access_token: str, homeserver_url: str
     ) -> Tuple[str, str, str]:
         async with MatrixClient(
-            homeserver_url=homeserver_url, access_token=access_token
+            homeserver_url=homeserver_url, access_token=access_token, max_timeouts=15
         ) as client:
             res = await client.whoami()
             if isinstance(res, WhoamiError):
@@ -187,7 +187,7 @@ class AuthController:
                     exit(1)
         if not password:
             password = prompt_matrix_password(matrix_id, homeserver_url=homeserver_url)
-        async with MatrixClient(homeserver_url) as client:
+        async with MatrixClient(homeserver_url, max_timeouts=15) as client:
             if apex_changed:
                 local, _ = parse_matrix_id(matrix_id=matrix_id)
                 unique_id = sha256(f"{local}{homeserver_url}".encode("utf-8")).hexdigest()[:4]
